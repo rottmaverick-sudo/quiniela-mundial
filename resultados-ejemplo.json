@@ -1,0 +1,18 @@
+{
+  "matches": [
+    {
+      "id": "m1",
+      "home": "Mexico",
+      "away": "Sudafrica",
+      "realHome": 2,
+      "realAway": 1
+    },
+    {
+      "id": "final",
+      "home": "Ganador semifinal",
+      "away": "Ganador semifinal",
+      "realHome": "",
+      "realAway": ""
+    }
+  ]
+}

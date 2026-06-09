@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Quiniela Mundial 2026</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="shell">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">Mundial 2026</p>
+          <h1>Quiniela</h1>
+          <p class="lede">Cuentas con contrasena, tabla general y resultados compartidos para toda la quiniela.</p>
+        </div>
+        <div class="score-card">
+          <span id="activePlayerLabel">Sin sesion</span>
+          <strong id="playerScore">0 pts</strong>
+        </div>
+      </section>
+
+      <section class="login-panel" aria-label="Login">
+        <label>
+          Usuario
+          <input id="loginName" type="text" placeholder="Tu usuario" autocomplete="username">
+        </label>
+        <label>
+          Contrasena
+          <input id="loginPassword" type="password" placeholder="Minimo 6 caracteres" autocomplete="current-password">
+        </label>
+        <button id="loginButton" type="button">Entrar</button>
+        <button id="registerButton" type="button">Crear cuenta</button>
+        <button id="logoutButton" type="button" class="ghost">Salir</button>
+      </section>
+      <p id="appMessage" class="message" role="status"></p>
+
+      <section class="layout">
+        <aside class="side">
+          <section class="panel">
+            <div class="panel-title">
+              <h2>Tabla general</h2>
+              <span id="playerCount">0 jugadores</span>
+            </div>
+            <ol id="leaderboard" class="leaderboard"></ol>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title">
+              <h2>Resultados</h2>
+              <span id="lastSync">Sin refrescar</span>
+            </div>
+            <label>
+              URL de API
+              <input id="apiUrl" type="url" placeholder="https://.../resultados.json">
+            </label>
+            <div class="button-row">
+              <button id="refreshResults" type="button">Refrescar</button>
+              <button id="saveApi" type="button" class="ghost">Guardar URL</button>
+            </div>
+            <label class="inline-check">
+              <input id="autoRefresh" type="checkbox">
+              Auto-refrescar cada 5 min
+            </label>
+            <p class="hint">La API debe devolver JSON con partidos y marcadores. Si no hay API, puedes capturar resultados a mano.</p>
+          </section>
+        </aside>
+
+        <section>
+          <section class="toolbar" aria-label="Controles">
+            <label>
+              Fase
+              <select id="phaseFilter"></select>
+            </label>
+            <label>
+              Buscar
+              <input id="searchBox" type="search" placeholder="Equipo o sede">
+            </label>
+            <button id="addMatch" type="button">Agregar partido</button>
+            <button id="exportData" type="button">Exportar liga</button>
+            <label class="import-button">
+              Importar liga
+              <input id="importData" type="file" accept="application/json">
+            </label>
+            <button id="resetData" type="button" class="ghost">Reiniciar</button>
+          </section>
+
+          <section class="summary" aria-label="Resumen">
+            <div><span>Exactos</span><strong id="exactCount">0</strong></div>
+            <div><span>Tendencia</span><strong id="trendCount">0</strong></div>
+            <div><span>Partidos</span><strong id="matchCount">0</strong></div>
+          </section>
+
+          <section id="matches" class="matches" aria-live="polite"></section>
+        </section>
+      </section>
+    </main>
+
+    <template id="matchTemplate">
+      <article class="match-card">
+        <header>
+          <input class="phase admin-field" aria-label="Fase">
+          <input class="date admin-field" type="date" aria-label="Fecha">
+          <input class="venue admin-field" aria-label="Sede">
+        </header>
+        <div class="teams">
+          <input class="home admin-field" aria-label="Equipo local">
+          <span>vs</span>
+          <input class="away admin-field" aria-label="Equipo visitante">
+        </div>
+        <div class="picks">
+          <fieldset>
+            <legend>Pronostico</legend>
+            <input class="pickHome" type="number" min="0" inputmode="numeric" aria-label="Goles pronosticados local">
+            <span>-</span>
+            <input class="pickAway" type="number" min="0" inputmode="numeric" aria-label="Goles pronosticados visitante">
+          </fieldset>
+          <fieldset>
+            <legend>Resultado</legend>
+            <input class="realHome admin-field" type="number" min="0" inputmode="numeric" aria-label="Goles reales local">
+            <span>-</span>
+            <input class="realAway admin-field" type="number" min="0" inputmode="numeric" aria-label="Goles reales visitante">
+          </fieldset>
+          <strong class="points">0 pts</strong>
+        </div>
+        <button class="delete admin-field" type="button" aria-label="Eliminar partido">Eliminar</button>
+      </article>
+    </template>
+
+    <script src="app.js"></script>
+  </body>
+</html>
