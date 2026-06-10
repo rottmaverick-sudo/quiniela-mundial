@@ -1,4 +1,4 @@
-const phases = ["Todos", "Grupos", "Dieciseisavos", "Octavos", "Cuartos", "Semifinales", "Tercer lugar", "Final"];
+const phases = ["Todos", "Primera ronda", "Grupos", "Dieciseisavos", "Octavos", "Cuartos", "Semifinales", "Tercer lugar", "Final"];
 
 let state = {
   user: null,

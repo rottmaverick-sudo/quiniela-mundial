@@ -18,27 +18,57 @@ DB_PATH = DATA_DIR / "quiniela.sqlite"
 SESSION_DAYS = 30
 
 
-STARTER_MATCHES = [
-    ("m1", 1, "Grupos", "2026-06-11", "Ciudad de Mexico", "Mexico", "Sudafrica"),
-    ("m2", 2, "Grupos", "2026-06-11", "Guadalajara", "Equipo A2", "Equipo A3"),
-    ("m3", 3, "Grupos", "2026-06-12", "Toronto", "Canada", "Equipo B2"),
-    ("m4", 4, "Grupos", "2026-06-12", "Los Angeles", "Estados Unidos", "Equipo D2"),
-    ("m5", 5, "Grupos", "2026-06-13", "Monterrey", "Equipo C1", "Equipo C2"),
-    ("m6", 6, "Grupos", "2026-06-13", "Boston", "Equipo E1", "Equipo E2"),
-    ("m7", 7, "Grupos", "2026-06-14", "Vancouver", "Equipo F1", "Equipo F2"),
-    ("m8", 8, "Grupos", "2026-06-14", "Miami", "Equipo G1", "Equipo G2"),
-    ("m9", 9, "Grupos", "2026-06-15", "Dallas", "Equipo H1", "Equipo H2"),
-    ("m10", 10, "Grupos", "2026-06-15", "New York New Jersey", "Equipo I1", "Equipo I2"),
-    ("m11", 11, "Grupos", "2026-06-16", "Houston", "Equipo J1", "Equipo J2"),
-    ("m12", 12, "Grupos", "2026-06-16", "Kansas City", "Equipo K1", "Equipo K2"),
-    ("m13", 13, "Grupos", "2026-06-17", "Atlanta", "Equipo L1", "Equipo L2"),
-    ("r32-1", 14, "Dieciseisavos", "2026-06-28", "Por definir", "2A", "2B"),
-    ("r16-1", 15, "Octavos", "2026-07-04", "Por definir", "Ganador R32", "Ganador R32"),
-    ("qf-1", 16, "Cuartos", "2026-07-09", "Por definir", "Ganador octavos", "Ganador octavos"),
-    ("sf-1", 17, "Semifinales", "2026-07-14", "Por definir", "Ganador cuartos", "Ganador cuartos"),
-    ("third", 18, "Tercer lugar", "2026-07-18", "Miami", "Perdedor semifinal", "Perdedor semifinal"),
-    ("final", 19, "Final", "2026-07-19", "New York New Jersey", "Ganador semifinal", "Ganador semifinal"),
-]
+GROUPS = {
+    "A": ["Mexico", "South Africa", "South Korea", "Czech Republic"],
+    "B": ["Canada", "Bosnia and Herzegovina", "Qatar", "Switzerland"],
+    "C": ["Brazil", "Morocco", "Haiti", "Scotland"],
+    "D": ["United States", "Paraguay", "Australia", "Turkey"],
+    "E": ["Germany", "Curacao", "Ivory Coast", "Ecuador"],
+    "F": ["Netherlands", "Japan", "Sweden", "Tunisia"],
+    "G": ["Belgium", "Egypt", "Iran", "New Zealand"],
+    "H": ["Spain", "Cape Verde", "Saudi Arabia", "Uruguay"],
+    "I": ["France", "Senegal", "Iraq", "Norway"],
+    "J": ["Argentina", "Algeria", "Austria", "Jordan"],
+    "K": ["Portugal", "DR Congo", "Uzbekistan", "Colombia"],
+    "L": ["England", "Croatia", "Ghana", "Panama"],
+}
+
+GROUP_DATES = {
+    "A": ["2026-06-11", "2026-06-18", "2026-06-24"],
+    "B": ["2026-06-12", "2026-06-18", "2026-06-24"],
+    "C": ["2026-06-13", "2026-06-19", "2026-06-24"],
+    "D": ["2026-06-12", "2026-06-19", "2026-06-25"],
+    "E": ["2026-06-14", "2026-06-20", "2026-06-25"],
+    "F": ["2026-06-14", "2026-06-20", "2026-06-25"],
+    "G": ["2026-06-15", "2026-06-21", "2026-06-26"],
+    "H": ["2026-06-15", "2026-06-21", "2026-06-26"],
+    "I": ["2026-06-16", "2026-06-22", "2026-06-26"],
+    "J": ["2026-06-16", "2026-06-22", "2026-06-27"],
+    "K": ["2026-06-17", "2026-06-23", "2026-06-27"],
+    "L": ["2026-06-17", "2026-06-23", "2026-06-27"],
+}
+
+GROUP_PAIRINGS = [(0, 1), (2, 3), (0, 2), (3, 1), (3, 0), (1, 2)]
+
+
+def starter_matches():
+    matches = []
+    number = 1
+    for group, teams in GROUPS.items():
+        dates = GROUP_DATES[group]
+        for index, (home_index, away_index) in enumerate(GROUP_PAIRINGS):
+            matchday = index // 2
+            matches.append((
+                f"g{group.lower()}-{index + 1}",
+                number,
+                f"Primera ronda - Grupo {group}",
+                dates[matchday],
+                "Por definir",
+                teams[home_index],
+                teams[away_index],
+            ))
+            number += 1
+    return matches
 
 
 def db():
@@ -100,7 +130,7 @@ def init_db():
                 INSERT INTO matches (id, number, phase, date, venue, home, away)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
-                STARTER_MATCHES,
+                starter_matches(),
             )
 
 
@@ -175,6 +205,9 @@ class Handler(SimpleHTTPRequestHandler):
             return
         if path == "/api/matches":
             self.api_add_match()
+            return
+        if path == "/api/admin/reset-group-stage":
+            self.api_reset_group_stage()
             return
         self.send_error(404)
 
@@ -410,6 +443,21 @@ class Handler(SimpleHTTPRequestHandler):
         with db() as conn:
             conn.execute("DELETE FROM matches WHERE id = ?", (match_id,))
         self.json({"ok": True})
+
+    def api_reset_group_stage(self):
+        if not self.require_admin():
+            return
+        with db() as conn:
+            conn.execute("DELETE FROM picks")
+            conn.execute("DELETE FROM matches")
+            conn.executemany(
+                """
+                INSERT INTO matches (id, number, phase, date, venue, home, away)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                starter_matches(),
+            )
+        self.json({"ok": True, "matches": len(starter_matches())})
 
     def api_settings(self):
         if not self.require_admin():
