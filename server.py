@@ -173,6 +173,7 @@ def init_db():
               match_id TEXT NOT NULL REFERENCES matches(id) ON DELETE CASCADE,
               pick_home INTEGER,
               pick_away INTEGER,
+              pick_outcome TEXT,
               PRIMARY KEY (user_id, match_id)
             );
 
@@ -183,6 +184,7 @@ def init_db():
             """
         )
         count = first_value(conn.execute("SELECT COUNT(*) AS count FROM matches").fetchone())
+        ensure_pick_outcome_column(conn)
         if count == 0:
             conn.executemany(
                 """
@@ -191,6 +193,23 @@ def init_db():
                 """,
                 starter_matches(),
             )
+
+
+def ensure_pick_outcome_column(conn):
+    if conn.kind == "sqlite":
+        columns = conn.execute("PRAGMA table_info(picks)").fetchall()
+        has_column = any(row["name"] == "pick_outcome" for row in columns)
+    else:
+        row = conn.execute(
+            """
+            SELECT COUNT(*) AS count
+            FROM information_schema.columns
+            WHERE table_name = 'picks' AND column_name = 'pick_outcome'
+            """
+        ).fetchone()
+        has_column = first_value(row) > 0
+    if not has_column:
+        conn.execute("ALTER TABLE picks ADD COLUMN pick_outcome TEXT")
 
 
 def hash_password(password, salt=None):
@@ -208,13 +227,16 @@ def verify_password(password, stored):
 def score_match(match, pick):
     if pick is None:
         return 0
-    values = [pick["pick_home"], pick["pick_away"], match["real_home"], match["real_away"]]
-    if any(value is None for value in values):
+    real_values = [match["real_home"], match["real_away"]]
+    if any(value is None for value in real_values):
         return 0
-    ph, pa, rh, ra = values
-    if ph == rh and pa == ra:
+    rh, ra = real_values
+    pick_home = pick["pick_home"]
+    pick_away = pick["pick_away"]
+    if pick_home is not None and pick_away is not None and pick_home == rh and pick_away == ra:
         return 3
-    return 1 if outcome(ph, pa) == outcome(rh, ra) else 0
+    pick_outcome = pick["pick_outcome"] or (outcome(pick_home, pick_away) if pick_home is not None and pick_away is not None else "")
+    return 1 if pick_outcome == outcome(rh, ra) else 0
 
 
 def outcome(home, away):
@@ -421,6 +443,7 @@ class Handler(SimpleHTTPRequestHandler):
                     my_picks[row["match_id"]] = {
                         "home": row["pick_home"] if row["pick_home"] is not None else "",
                         "away": row["pick_away"] if row["pick_away"] is not None else "",
+                        "outcome": row["pick_outcome"] or "",
                     }
 
         self.json({
@@ -438,14 +461,20 @@ class Handler(SimpleHTTPRequestHandler):
         data = self.read_json()
         home = number_or_none(data.get("home"))
         away = number_or_none(data.get("away"))
+        pick_outcome = str(data.get("outcome", "")).strip()
+        if pick_outcome not in ("home", "draw", "away"):
+            pick_outcome = None
         with db() as conn:
             conn.execute(
                 """
-                INSERT INTO picks (user_id, match_id, pick_home, pick_away)
-                VALUES (?, ?, ?, ?)
-                ON CONFLICT(user_id, match_id) DO UPDATE SET pick_home = excluded.pick_home, pick_away = excluded.pick_away
+                INSERT INTO picks (user_id, match_id, pick_home, pick_away, pick_outcome)
+                VALUES (?, ?, ?, ?, ?)
+                ON CONFLICT(user_id, match_id) DO UPDATE SET
+                  pick_home = excluded.pick_home,
+                  pick_away = excluded.pick_away,
+                  pick_outcome = excluded.pick_outcome
                 """,
-                (user["id"], match_id, home, away),
+                (user["id"], match_id, home, away, pick_outcome),
             )
         self.json({"ok": True})
 

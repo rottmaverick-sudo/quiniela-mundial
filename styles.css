@@ -336,6 +336,15 @@ button:disabled {
   overflow: hidden;
 }
 
+.date-divider {
+  padding: 12px 14px;
+  border-top: 1px solid var(--line);
+  color: var(--ink);
+  background: #f7fafc;
+  font-weight: 900;
+  text-transform: capitalize;
+}
+
 .table-head,
 .match-row {
   display: grid;

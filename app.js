@@ -106,14 +106,21 @@ function render() {
     return phaseOk && text.includes(query);
   });
 
-  filtered.forEach((match) => matchesEl.append(renderMatch(match, user, isAdmin)));
+  let currentDate = "";
+  filtered.forEach((match) => {
+    if (match.date !== currentDate) {
+      currentDate = match.date;
+      matchesEl.append(renderDateDivider(match.date));
+    }
+    matchesEl.append(renderMatch(match, user, isAdmin));
+  });
   renderLeaderboard();
   updateSummary(filtered);
 }
 
 function renderMatch(match, user, isAdmin) {
   const node = template.content.firstElementChild.cloneNode(true);
-  const pick = state.picks[match.id] || { home: "", away: "" };
+  const pick = state.picks[match.id] || { home: "", away: "", outcome: "" };
 
   node.querySelector(".dateText").textContent = formatDate(match.date);
   node.querySelector(".phaseText").textContent = match.phase.replace("Primera ronda - ", "");
@@ -151,7 +158,7 @@ function bindPick(node, selector, matchId, pick, key, locked) {
   input.disabled = locked;
   input.placeholder = locked ? "Login" : "";
   input.addEventListener("change", async () => {
-    state.picks[matchId] ||= { home: "", away: "" };
+    state.picks[matchId] ||= { home: "", away: "", outcome: "" };
     state.picks[matchId][key] = cleanNumber(input.value);
     await request(`/api/picks/${matchId}`, {
       method: "PATCH",
@@ -167,7 +174,11 @@ function bindOutcomeButtons(node, matchId, pick, locked) {
     button.disabled = locked;
     button.classList.toggle("selected", button.dataset.outcome === current);
     button.addEventListener("click", async () => {
-      const nextPick = outcomeToScore(button.dataset.outcome);
+      const nextPick = {
+        home: pick.home ?? "",
+        away: pick.away ?? "",
+        outcome: button.dataset.outcome
+      };
       state.picks[matchId] = nextPick;
       await request(`/api/picks/${matchId}`, {
         method: "PATCH",
@@ -179,14 +190,9 @@ function bindOutcomeButtons(node, matchId, pick, locked) {
 }
 
 function pickOutcome(pick) {
+  if (pick.outcome) return pick.outcome;
   if (pick.home === "" || pick.away === "" || pick.home === undefined || pick.away === undefined) return "";
   return outcome(Number(pick.home), Number(pick.away));
-}
-
-function outcomeToScore(value) {
-  if (value === "home") return { home: 1, away: 0 };
-  if (value === "away") return { home: 0, away: 1 };
-  return { home: 0, away: 0 };
 }
 
 async function updateMatch(matchId, patch) {
@@ -279,10 +285,13 @@ function updateSummary(matches) {
 
 function scoreMatch(match, pick) {
   const values = [pick.home, pick.away, match.realHome, match.realAway];
-  if (values.some((value) => value === "" || value === null || Number.isNaN(Number(value)))) return 0;
-  const [ph, pa, rh, ra] = values.map(Number);
-  if (ph === rh && pa === ra) return 3;
-  return outcome(ph, pa) === outcome(rh, ra) ? 1 : 0;
+  if (match.realHome === "" || match.realAway === "" || match.realHome === null || match.realAway === null) return 0;
+  const rh = Number(match.realHome);
+  const ra = Number(match.realAway);
+  const hasScore = ![pick.home, pick.away].some((value) => value === "" || value === null || Number.isNaN(Number(value)));
+  if (hasScore && Number(pick.home) === rh && Number(pick.away) === ra) return 3;
+  const selectedOutcome = pick.outcome || (hasScore ? outcome(Number(pick.home), Number(pick.away)) : "");
+  return selectedOutcome === outcome(rh, ra) ? 1 : 0;
 }
 
 function outcome(home, away) {
@@ -328,6 +337,18 @@ function exportData() {
 function formatDate(value) {
   const date = new Date(`${value}T12:00:00`);
   return date.toLocaleDateString("es-MX", { day: "2-digit", month: "short" });
+}
+
+function renderDateDivider(value) {
+  const divider = document.createElement("div");
+  divider.className = "date-divider";
+  const date = new Date(`${value}T12:00:00`);
+  divider.textContent = date.toLocaleDateString("es-MX", {
+    weekday: "long",
+    day: "2-digit",
+    month: "long"
+  });
+  return divider;
 }
 
 async function request(path, options = {}) {
