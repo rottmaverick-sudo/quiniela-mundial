@@ -290,6 +290,9 @@ class Handler(SimpleHTTPRequestHandler):
         if path == "/api/admin/reset-group-stage":
             self.api_reset_group_stage()
             return
+        if path == "/api/admin/clear-pick-scores":
+            self.api_clear_pick_scores()
+            return
         self.send_error(404)
 
     def do_PATCH(self):
@@ -548,6 +551,13 @@ class Handler(SimpleHTTPRequestHandler):
                 starter_matches(),
             )
         self.json({"ok": True, "matches": len(starter_matches())})
+
+    def api_clear_pick_scores(self):
+        if not self.require_admin():
+            return
+        with db() as conn:
+            conn.execute("UPDATE picks SET pick_home = NULL, pick_away = NULL")
+        self.json({"ok": True})
 
     def api_settings(self):
         if not self.require_admin():
