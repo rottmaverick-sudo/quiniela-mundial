@@ -37,7 +37,7 @@
         <div>
           <p class="eyebrow">Mundial 2026</p>
           <h1>Quiniela</h1>
-          <p class="lede">Pronosticos por marcador, tabla general y resultados compartidos para toda la liga.</p>
+          <p class="lede">Primera ronda del Mundial 2026: elige ganador o empate, y opcionalmente marca el resultado exacto.</p>
         </div>
         <div class="score-card">
           <span id="activePlayerLabel">Sin sesion</span>
@@ -60,7 +60,7 @@
             <ol id="leaderboard" class="leaderboard"></ol>
           </section>
 
-          <section class="panel">
+          <section class="panel admin-panel">
             <div class="panel-title">
               <h2>Resultados</h2>
               <span id="lastSync">Sin refrescar</span>
@@ -84,20 +84,14 @@
         <section>
           <section class="toolbar" aria-label="Controles">
             <label>
-              Fase
+              Grupo
               <select id="phaseFilter"></select>
             </label>
             <label>
               Buscar
               <input id="searchBox" type="search" placeholder="Equipo o sede">
             </label>
-            <button id="addMatch" type="button">Agregar partido</button>
-            <button id="exportData" type="button">Exportar liga</button>
-            <label class="import-button">
-              Importar liga
-              <input id="importData" type="file" accept="application/json">
-            </label>
-            <button id="resetData" type="button" class="ghost">Reiniciar</button>
+            <button id="exportData" type="button">Exportar</button>
           </section>
 
           <section class="summary" aria-label="Resumen">
@@ -106,39 +100,48 @@
             <div><span>Partidos</span><strong id="matchCount">0</strong></div>
           </section>
 
-          <section id="matches" class="matches" aria-live="polite"></section>
+          <section class="quiniela-table" aria-live="polite">
+            <div class="table-head">
+              <span>Fecha</span>
+              <span>Partido</span>
+              <span>Pronostico</span>
+              <span>Marcador</span>
+              <span>Pts</span>
+            </div>
+            <div id="matches" class="matches"></div>
+          </section>
         </section>
       </section>
     </main>
 
     <template id="matchTemplate">
-      <article class="match-card">
-        <header>
-          <input class="phase admin-field" aria-label="Fase">
-          <input class="date admin-field" type="date" aria-label="Fecha">
-          <input class="venue admin-field" aria-label="Sede">
-        </header>
+      <article class="match-row">
+        <div class="match-date">
+          <strong class="dateText"></strong>
+          <span class="phaseText"></span>
+        </div>
         <div class="teams">
-          <input class="home admin-field" aria-label="Equipo local">
+          <strong class="homeText"></strong>
           <span>vs</span>
-          <input class="away admin-field" aria-label="Equipo visitante">
+          <strong class="awayText"></strong>
         </div>
-        <div class="picks">
-          <fieldset>
-            <legend>Pronostico</legend>
-            <input class="pickHome" type="number" min="0" inputmode="numeric" aria-label="Goles pronosticados local">
-            <span>-</span>
-            <input class="pickAway" type="number" min="0" inputmode="numeric" aria-label="Goles pronosticados visitante">
-          </fieldset>
-          <fieldset>
-            <legend>Resultado</legend>
-            <input class="realHome admin-field" type="number" min="0" inputmode="numeric" aria-label="Goles reales local">
-            <span>-</span>
-            <input class="realAway admin-field" type="number" min="0" inputmode="numeric" aria-label="Goles reales visitante">
-          </fieldset>
-          <strong class="points">0 pts</strong>
+        <div class="pick-buttons" aria-label="Pronostico">
+          <button class="pickOutcome" type="button" data-outcome="home">Local</button>
+          <button class="pickOutcome" type="button" data-outcome="draw">Empate</button>
+          <button class="pickOutcome" type="button" data-outcome="away">Visita</button>
         </div>
-        <button class="delete admin-field" type="button" aria-label="Eliminar partido">Eliminar</button>
+        <fieldset class="score-pick">
+          <input class="pickHome" type="number" min="0" inputmode="numeric" aria-label="Goles pronosticados local">
+          <span>-</span>
+          <input class="pickAway" type="number" min="0" inputmode="numeric" aria-label="Goles pronosticados visitante">
+        </fieldset>
+        <strong class="points">0</strong>
+        <fieldset class="admin-result">
+          <legend>Resultado</legend>
+          <input class="realHome" type="number" min="0" inputmode="numeric" aria-label="Goles reales local">
+          <span>-</span>
+          <input class="realAway" type="number" min="0" inputmode="numeric" aria-label="Goles reales visitante">
+        </fieldset>
       </article>
     </template>
 

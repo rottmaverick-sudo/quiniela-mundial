@@ -117,7 +117,7 @@ h2 {
 .login-panel,
 .toolbar,
 .summary div,
-.match-card {
+.quiniela-table {
   border: 1px solid var(--line);
   border-radius: 8px;
   background: var(--panel);
@@ -332,48 +332,87 @@ button:disabled {
   grid-column: 1 / -1;
 }
 
-.matches {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+.quiniela-table {
+  overflow: hidden;
 }
 
-.match-card {
+.table-head,
+.match-row {
   display: grid;
-  gap: 12px;
-  padding: 14px;
+  grid-template-columns: 110px minmax(240px, 1.5fr) minmax(230px, 1fr) 130px 74px;
+  align-items: center;
+  gap: 10px;
 }
 
-.match-card header {
-  display: grid;
-  grid-template-columns: .9fr .8fr 1.3fr;
-  gap: 8px;
+.table-head {
+  padding: 10px 14px;
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  background: #eef3f6;
 }
 
-.teams,
-.picks,
-fieldset {
+.match-row {
+  min-height: 74px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--line);
+}
+
+.match-date {
   display: grid;
+  gap: 2px;
+}
+
+.match-date span {
+  color: var(--muted);
+  font-size: .8rem;
+  font-weight: 800;
+}
+
+.teams {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: 8px;
 }
 
-.teams {
-  grid-template-columns: 1fr auto 1fr;
+.teams strong:first-child {
+  text-align: right;
 }
 
 .teams span,
-fieldset span {
+.score-pick span,
+.admin-result span {
   color: var(--muted);
   font-weight: 800;
+  text-align: center;
 }
 
-.picks {
-  grid-template-columns: 1fr 1fr auto;
+.pick-buttons {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
 }
 
-fieldset {
+.pick-buttons button {
+  min-height: 34px;
+  padding: 6px 8px;
+  color: var(--ink);
+  background: #e7edf2;
+}
+
+.pick-buttons button.selected {
+  color: white;
+  background: var(--accent);
+}
+
+.score-pick,
+.admin-result {
+  display: grid;
   grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 6px;
   margin: 0;
   min-width: 0;
   border: 1px solid var(--line);
@@ -393,11 +432,19 @@ legend {
   color: var(--accent-2);
 }
 
-.delete {
-  justify-self: end;
-  min-height: 34px;
-  color: var(--ink);
-  background: #fff1f0;
+.admin-result,
+.admin-panel {
+  display: none;
+}
+
+.is-admin .admin-result,
+.is-admin .admin-panel {
+  display: grid;
+}
+
+.admin-result {
+  grid-column: 4 / 6;
+  background: #fffdf4;
 }
 
 @media (max-width: 1040px) {
@@ -423,9 +470,22 @@ legend {
     grid-template-columns: 1fr;
   }
 
-  .matches,
   .summary {
     grid-template-columns: 1fr;
+  }
+
+  .table-head {
+    display: none;
+  }
+
+  .match-row {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .teams strong:first-child,
+  .points {
+    text-align: left;
   }
 }
 
@@ -434,9 +494,7 @@ legend {
     width: min(100% - 20px, 1240px);
   }
 
-  .match-card header,
   .teams,
-  .picks,
   .button-row {
     grid-template-columns: 1fr;
   }

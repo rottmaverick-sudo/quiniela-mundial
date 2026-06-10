@@ -1,4 +1,4 @@
-const phases = ["Todos", "Primera ronda", "Grupos", "Dieciseisavos", "Octavos", "Cuartos", "Semifinales", "Tercer lugar", "Final"];
+const phases = ["Todos", "Grupo A", "Grupo B", "Grupo C", "Grupo D", "Grupo E", "Grupo F", "Grupo G", "Grupo H", "Grupo I", "Grupo J", "Grupo K", "Grupo L"];
 
 let state = {
   user: null,
@@ -37,10 +37,7 @@ document.querySelector("#registerButton").addEventListener("click", () => auth("
 document.querySelector("#logoutButton").addEventListener("click", logout);
 document.querySelector("#saveApi").addEventListener("click", saveSettings);
 document.querySelector("#refreshResults").addEventListener("click", refreshResults);
-document.querySelector("#addMatch").addEventListener("click", addMatch);
 document.querySelector("#exportData").addEventListener("click", exportData);
-document.querySelector("#importData").addEventListener("change", importData);
-document.querySelector("#resetData").addEventListener("click", () => showMessage("Con base de datos no reinicio todo desde el navegador."));
 phaseFilter.addEventListener("change", render);
 searchBox.addEventListener("input", render);
 autoRefresh.addEventListener("change", setupAutoRefresh);
@@ -95,6 +92,7 @@ function render() {
   const isAdmin = Boolean(user?.isAdmin);
   authScreen.hidden = Boolean(user);
   appShell.hidden = !user;
+  document.body.classList.toggle("is-admin", isAdmin);
   document.querySelector("#activePlayerLabel").textContent = user ? `${user.name}${isAdmin ? " · admin" : ""}` : "Sin sesion";
   document.querySelector("#playerCount").textContent = `${state.leaderboard.length} jugadores`;
   document.querySelector("#lastSync").textContent = state.settings.lastSync ? `Actualizado ${state.settings.lastSync}` : "Sin refrescar";
@@ -103,7 +101,7 @@ function render() {
   const query = searchBox.value.trim().toLowerCase();
   const selectedPhase = phaseFilter.value || "Todos";
   const filtered = state.matches.filter((match) => {
-    const phaseOk = selectedPhase === "Todos" || match.phase === selectedPhase;
+    const phaseOk = selectedPhase === "Todos" || match.phase.endsWith(selectedPhase);
     const text = `${match.home} ${match.away} ${match.venue}`.toLowerCase();
     return phaseOk && text.includes(query);
   });
@@ -117,24 +115,18 @@ function renderMatch(match, user, isAdmin) {
   const node = template.content.firstElementChild.cloneNode(true);
   const pick = state.picks[match.id] || { home: "", away: "" };
 
-  bindAdminText(node, ".phase", match, "phase", isAdmin);
-  bindAdminText(node, ".date", match, "date", isAdmin);
-  bindAdminText(node, ".venue", match, "venue", isAdmin);
-  bindAdminText(node, ".home", match, "home", isAdmin);
-  bindAdminText(node, ".away", match, "away", isAdmin);
-  bindAdminNumber(node, ".realHome", match, "realHome", isAdmin);
-  bindAdminNumber(node, ".realAway", match, "realAway", isAdmin);
+  node.querySelector(".dateText").textContent = formatDate(match.date);
+  node.querySelector(".phaseText").textContent = match.phase.replace("Primera ronda - ", "");
+  node.querySelector(".homeText").textContent = match.home;
+  node.querySelector(".awayText").textContent = match.away;
+
+  bindOutcomeButtons(node, match.id, pick, !user);
   bindPick(node, ".pickHome", match.id, pick, "home", !user);
   bindPick(node, ".pickAway", match.id, pick, "away", !user);
+  bindAdminNumber(node, ".realHome", match, "realHome", isAdmin);
+  bindAdminNumber(node, ".realAway", match, "realAway", isAdmin);
 
   node.querySelector(".points").textContent = `${scoreMatch(match, pick)} pts`;
-  const deleteButton = node.querySelector(".delete");
-  deleteButton.disabled = !isAdmin;
-  deleteButton.addEventListener("click", async () => {
-    if (!confirm("Eliminar este partido de la quiniela?")) return;
-    await request(`/api/matches/${match.id}`, { method: "DELETE" });
-    await loadState();
-  });
 
   return node;
 }
@@ -169,18 +161,37 @@ function bindPick(node, selector, matchId, pick, key, locked) {
   });
 }
 
+function bindOutcomeButtons(node, matchId, pick, locked) {
+  const current = pickOutcome(pick);
+  node.querySelectorAll(".pickOutcome").forEach((button) => {
+    button.disabled = locked;
+    button.classList.toggle("selected", button.dataset.outcome === current);
+    button.addEventListener("click", async () => {
+      const nextPick = outcomeToScore(button.dataset.outcome);
+      state.picks[matchId] = nextPick;
+      await request(`/api/picks/${matchId}`, {
+        method: "PATCH",
+        body: nextPick
+      });
+      await loadState();
+    });
+  });
+}
+
+function pickOutcome(pick) {
+  if (pick.home === "" || pick.away === "" || pick.home === undefined || pick.away === undefined) return "";
+  return outcome(Number(pick.home), Number(pick.away));
+}
+
+function outcomeToScore(value) {
+  if (value === "home") return { home: 1, away: 0 };
+  if (value === "away") return { home: 0, away: 1 };
+  return { home: 0, away: 0 };
+}
+
 async function updateMatch(matchId, patch) {
   try {
     await request(`/api/matches/${matchId}`, { method: "PATCH", body: patch });
-    await loadState();
-  } catch (error) {
-    showMessage(error.message, true);
-  }
-}
-
-async function addMatch() {
-  try {
-    await request("/api/matches", { method: "POST", body: {} });
     await loadState();
   } catch (error) {
     showMessage(error.message, true);
@@ -314,8 +325,9 @@ function exportData() {
   URL.revokeObjectURL(url);
 }
 
-function importData() {
-  showMessage("La importacion directa queda desactivada cuando usas base de datos.");
+function formatDate(value) {
+  const date = new Date(`${value}T12:00:00`);
+  return date.toLocaleDateString("es-MX", { day: "2-digit", month: "short" });
 }
 
 async function request(path, options = {}) {
