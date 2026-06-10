@@ -17,6 +17,9 @@ const loginPassword = document.querySelector("#loginPassword");
 const apiUrl = document.querySelector("#apiUrl");
 const autoRefresh = document.querySelector("#autoRefresh");
 const message = document.querySelector("#appMessage");
+const authMessage = document.querySelector("#authMessage");
+const authScreen = document.querySelector("#authScreen");
+const appShell = document.querySelector(".shell");
 let autoRefreshTimer = null;
 
 phases.forEach((phase) => {
@@ -26,7 +29,10 @@ phases.forEach((phase) => {
   phaseFilter.append(option);
 });
 
-document.querySelector("#loginButton").addEventListener("click", () => auth("login"));
+document.querySelector("#authForm").addEventListener("submit", (event) => {
+  event.preventDefault();
+  auth("login");
+});
 document.querySelector("#registerButton").addEventListener("click", () => auth("register"));
 document.querySelector("#logoutButton").addEventListener("click", logout);
 document.querySelector("#saveApi").addEventListener("click", saveSettings);
@@ -58,7 +64,7 @@ async function auth(mode) {
   const username = loginName.value.trim();
   const password = loginPassword.value;
   if (!username || !password) {
-    showMessage("Escribe usuario y contrasena.", true);
+    showMessage("Escribe usuario y contrasena.", true, true);
     return;
   }
 
@@ -73,7 +79,7 @@ async function auth(mode) {
     await loadState();
     showMessage(mode === "register" ? "Cuenta creada." : "Sesion iniciada.");
   } catch (error) {
-    showMessage(error.message, true);
+    showMessage(error.message, true, true);
   }
 }
 
@@ -87,6 +93,8 @@ async function logout() {
 function render() {
   const user = state.user;
   const isAdmin = Boolean(user?.isAdmin);
+  authScreen.hidden = Boolean(user);
+  appShell.hidden = !user;
   document.querySelector("#activePlayerLabel").textContent = user ? `${user.name}${isAdmin ? " · admin" : ""}` : "Sin sesion";
   document.querySelector("#playerCount").textContent = `${state.leaderboard.length} jugadores`;
   document.querySelector("#lastSync").textContent = state.settings.lastSync ? `Actualizado ${state.settings.lastSync}` : "Sin refrescar";
@@ -321,9 +329,15 @@ async function request(path, options = {}) {
   return data;
 }
 
-function showMessage(text, isError = false) {
-  message.textContent = text;
-  message.className = `message ${isError ? "error" : ""}`;
+function showMessage(text, isError = false, authOnly = false) {
+  const target = authOnly || !state.user ? authMessage : message;
+  target.textContent = text;
+  target.className = `message ${isError ? "error" : ""}`;
+  if (target === authMessage) {
+    message.textContent = "";
+  } else {
+    authMessage.textContent = "";
+  }
 }
 
 function normalize(value = "") {

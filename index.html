@@ -7,20 +7,14 @@
     <link rel="stylesheet" href="styles.css">
   </head>
   <body>
-    <main class="shell">
-      <section class="hero">
-        <div>
-          <p class="eyebrow">Mundial 2026</p>
-          <h1>Quiniela</h1>
-          <p class="lede">Cuentas con contrasena, tabla general y resultados compartidos para toda la quiniela.</p>
-        </div>
-        <div class="score-card">
-          <span id="activePlayerLabel">Sin sesion</span>
-          <strong id="playerScore">0 pts</strong>
-        </div>
-      </section>
-
-      <section class="login-panel" aria-label="Login">
+    <section id="authScreen" class="auth-screen">
+      <div class="auth-copy">
+        <p class="eyebrow">Mundial 2026</p>
+        <h1>Quiniela</h1>
+        <p class="lede">Crea tu cuenta, guarda tus pronosticos y compite en una tabla general privada para tu grupo.</p>
+      </div>
+      <form id="authForm" class="auth-card">
+        <h2>Entrar a la quiniela</h2>
         <label>
           Usuario
           <input id="loginName" type="text" placeholder="Tu usuario" autocomplete="username">
@@ -29,11 +23,32 @@
           Contrasena
           <input id="loginPassword" type="password" placeholder="Minimo 6 caracteres" autocomplete="current-password">
         </label>
-        <button id="loginButton" type="button">Entrar</button>
-        <button id="registerButton" type="button">Crear cuenta</button>
+        <div class="auth-actions">
+          <button id="loginButton" type="submit">Entrar</button>
+          <button id="registerButton" type="button" class="ghost">Crear cuenta</button>
+        </div>
+        <p class="hint">El primer usuario creado sera administrador de la quiniela.</p>
+        <p id="authMessage" class="message" role="status"></p>
+      </form>
+    </section>
+
+    <main class="shell">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">Mundial 2026</p>
+          <h1>Quiniela</h1>
+          <p class="lede">Pronosticos por marcador, tabla general y resultados compartidos para toda la liga.</p>
+        </div>
+        <div class="score-card">
+          <span id="activePlayerLabel">Sin sesion</span>
+          <strong id="playerScore">0 pts</strong>
+        </div>
+      </section>
+
+      <section class="session-bar" aria-label="Sesion">
+        <p id="appMessage" class="message" role="status"></p>
         <button id="logoutButton" type="button" class="ghost">Salir</button>
       </section>
-      <p id="appMessage" class="message" role="status"></p>
 
       <section class="layout">
         <aside class="side">
