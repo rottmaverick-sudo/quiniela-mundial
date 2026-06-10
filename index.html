@@ -103,9 +103,7 @@
           <section class="quiniela-table" aria-live="polite">
             <div class="table-head">
               <span>Fecha</span>
-              <span>Partido</span>
               <span>Pronostico</span>
-              <span>Marcador</span>
               <span>Pts</span>
             </div>
             <div id="matches" class="matches"></div>
@@ -121,20 +119,20 @@
           <span class="phaseText"></span>
         </div>
         <div class="teams">
-          <strong class="homeText"></strong>
-          <span>vs</span>
-          <strong class="awayText"></strong>
+          <div class="team-side">
+            <strong class="homeText"></strong>
+            <input class="pickHome" type="number" min="0" inputmode="numeric" aria-label="Goles pronosticados equipo izquierdo">
+          </div>
+          <div class="pick-buttons" aria-label="Pronostico">
+            <button class="pickOutcome" type="button" data-outcome="home" title="Gana equipo izquierdo">←</button>
+            <button class="pickOutcome" type="button" data-outcome="draw" title="Empate">X</button>
+            <button class="pickOutcome" type="button" data-outcome="away" title="Gana equipo derecho">→</button>
+          </div>
+          <div class="team-side">
+            <strong class="awayText"></strong>
+            <input class="pickAway" type="number" min="0" inputmode="numeric" aria-label="Goles pronosticados equipo derecho">
+          </div>
         </div>
-        <div class="pick-buttons" aria-label="Pronostico">
-          <button class="pickOutcome" type="button" data-outcome="home">Local</button>
-          <button class="pickOutcome" type="button" data-outcome="draw">Empate</button>
-          <button class="pickOutcome" type="button" data-outcome="away">Visita</button>
-        </div>
-        <fieldset class="score-pick">
-          <input class="pickHome" type="number" min="0" inputmode="numeric" aria-label="Goles pronosticados local">
-          <span>-</span>
-          <input class="pickAway" type="number" min="0" inputmode="numeric" aria-label="Goles pronosticados visitante">
-        </fieldset>
         <strong class="points">0</strong>
         <fieldset class="admin-result">
           <legend>Resultado</legend>

@@ -339,7 +339,7 @@ button:disabled {
 .table-head,
 .match-row {
   display: grid;
-  grid-template-columns: 110px minmax(240px, 1.5fr) minmax(230px, 1fr) 130px 74px;
+  grid-template-columns: 110px minmax(360px, 1fr) 74px;
   align-items: center;
   gap: 10px;
 }
@@ -372,17 +372,34 @@ button:disabled {
 
 .teams {
   display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  grid-template-columns: minmax(120px, 1fr) 128px minmax(120px, 1fr);
   align-items: center;
-  gap: 8px;
+  gap: 12px;
 }
 
-.teams strong:first-child {
-  text-align: right;
+.team-side {
+  display: grid;
+  gap: 6px;
 }
 
-.teams span,
-.score-pick span,
+.team-side:first-child {
+  justify-items: end;
+}
+
+.team-side:last-child {
+  justify-items: start;
+}
+
+.team-side strong {
+  overflow-wrap: anywhere;
+}
+
+.team-side input {
+  width: 70px;
+  text-align: center;
+  font-weight: 900;
+}
+
 .admin-result span {
   color: var(--muted);
   font-weight: 800;
@@ -400,6 +417,9 @@ button:disabled {
   padding: 6px 8px;
   color: var(--ink);
   background: #e7edf2;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.15;
 }
 
 .pick-buttons button.selected {
@@ -407,7 +427,6 @@ button:disabled {
   background: var(--accent);
 }
 
-.score-pick,
 .admin-result {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
@@ -443,8 +462,10 @@ legend {
 }
 
 .admin-result {
-  grid-column: 4 / 6;
+  grid-column: 2 / 4;
   background: #fffdf4;
+  justify-self: end;
+  width: 170px;
 }
 
 @media (max-width: 1040px) {
@@ -487,6 +508,17 @@ legend {
   .points {
     text-align: left;
   }
+
+  .team-side:first-child,
+  .team-side:last-child {
+    justify-items: start;
+  }
+
+  .admin-result {
+    grid-column: auto;
+    justify-self: stretch;
+    width: 100%;
+  }
 }
 
 @media (max-width: 560px) {
@@ -497,9 +529,5 @@ legend {
   .teams,
   .button-row {
     grid-template-columns: 1fr;
-  }
-
-  .teams span {
-    justify-self: center;
   }
 }
