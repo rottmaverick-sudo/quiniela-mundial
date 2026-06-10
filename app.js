@@ -175,8 +175,8 @@ function bindOutcomeButtons(node, matchId, pick, locked) {
     button.classList.toggle("selected", button.dataset.outcome === current);
     button.addEventListener("click", async () => {
       const nextPick = {
-        home: pick.home ?? "",
-        away: pick.away ?? "",
+        home: "",
+        away: "",
         outcome: button.dataset.outcome
       };
       state.picks[matchId] = nextPick;
