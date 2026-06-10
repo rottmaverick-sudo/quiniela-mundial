@@ -11,10 +11,17 @@ import secrets
 import sqlite3
 import time
 
+try:
+    import psycopg
+    from psycopg.rows import dict_row
+except ImportError:
+    psycopg = None
+
 
 ROOT = Path(__file__).resolve().parent
 DATA_DIR = Path(os.environ.get("DATA_DIR", ROOT / "data"))
 DB_PATH = DATA_DIR / "quiniela.sqlite"
+DATABASE_URL = os.environ.get("DATABASE_URL", "")
 SESSION_DAYS = 30
 
 
@@ -71,21 +78,73 @@ def starter_matches():
     return matches
 
 
+class DbAdapter:
+    def __init__(self):
+        self.kind = "postgres" if DATABASE_URL else "sqlite"
+        if self.kind == "postgres":
+            if psycopg is None:
+                raise RuntimeError("psycopg is required when DATABASE_URL is set")
+            self.conn = psycopg.connect(DATABASE_URL, row_factory=dict_row)
+        else:
+            DATA_DIR.mkdir(parents=True, exist_ok=True)
+            self.conn = sqlite3.connect(DB_PATH)
+            self.conn.row_factory = sqlite3.Row
+            self.conn.execute("PRAGMA foreign_keys = ON")
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if exc_type:
+            self.conn.rollback()
+        else:
+            self.conn.commit()
+        self.conn.close()
+
+    def sql(self, statement):
+        if self.kind == "postgres":
+            return statement.replace("?", "%s")
+        return statement
+
+    def execute(self, statement, params=()):
+        return self.conn.execute(self.sql(statement), params)
+
+    def executemany(self, statement, params):
+        return self.conn.executemany(self.sql(statement), params)
+
+    def executescript(self, script):
+        if self.kind == "sqlite":
+            return self.conn.executescript(script)
+        for statement in script.split(";"):
+            statement = statement.strip()
+            if statement:
+                self.conn.execute(statement)
+
+
 def db():
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA foreign_keys = ON")
-    return conn
+    return DbAdapter()
+
+
+def first_value(row):
+    if isinstance(row, dict):
+        return next(iter(row.values()))
+    return row[0]
+
+
+def integrity_error(error):
+    if isinstance(error, sqlite3.IntegrityError):
+        return True
+    return psycopg is not None and isinstance(error, psycopg.errors.UniqueViolation)
 
 
 def init_db():
     with db() as conn:
+        username_unique = "UNIQUE COLLATE NOCASE" if conn.kind == "sqlite" else "UNIQUE"
         conn.executescript(
-            """
+            f"""
             CREATE TABLE IF NOT EXISTS users (
               id TEXT PRIMARY KEY,
-              username TEXT NOT NULL UNIQUE COLLATE NOCASE,
+              username TEXT NOT NULL {username_unique},
               password_hash TEXT NOT NULL,
               is_admin INTEGER NOT NULL DEFAULT 0,
               created_at INTEGER NOT NULL
@@ -123,7 +182,7 @@ def init_db():
             );
             """
         )
-        count = conn.execute("SELECT COUNT(*) FROM matches").fetchone()[0]
+        count = first_value(conn.execute("SELECT COUNT(*) AS count FROM matches").fetchone())
         if count == 0:
             conn.executemany(
                 """
@@ -291,16 +350,18 @@ class Handler(SimpleHTTPRequestHandler):
             return
 
         with db() as conn:
-            has_users = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0] > 0
+            has_users = first_value(conn.execute("SELECT COUNT(*) AS count FROM users").fetchone()) > 0
             user_id = secrets.token_hex(12)
             try:
                 conn.execute(
                     "INSERT INTO users (id, username, password_hash, is_admin, created_at) VALUES (?, ?, ?, ?, ?)",
                     (user_id, username, hash_password(password), 0 if has_users else 1, int(time.time())),
                 )
-            except sqlite3.IntegrityError:
-                self.json({"error": "Ese usuario ya existe."}, 409)
-                return
+            except Exception as error:
+                if integrity_error(error):
+                    self.json({"error": "Ese usuario ya existe."}, 409)
+                    return
+                raise
         self.create_session(user_id)
 
     def api_login(self):
@@ -308,7 +369,7 @@ class Handler(SimpleHTTPRequestHandler):
         username = str(data.get("username", "")).strip()
         password = str(data.get("password", ""))
         with db() as conn:
-            user = conn.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
+            user = conn.execute("SELECT * FROM users WHERE lower(username) = lower(?)", (username,)).fetchone()
         if not user or not verify_password(password, user["password_hash"]):
             self.json({"error": "Usuario o contrasena incorrectos."}, 401)
             return
@@ -419,7 +480,7 @@ class Handler(SimpleHTTPRequestHandler):
         data = self.read_json()
         match_id = secrets.token_hex(8)
         with db() as conn:
-            next_number = conn.execute("SELECT COALESCE(MAX(number), 0) + 1 FROM matches").fetchone()[0]
+            next_number = first_value(conn.execute("SELECT COALESCE(MAX(number), 0) + 1 AS next_number FROM matches").fetchone())
             conn.execute(
                 """
                 INSERT INTO matches (id, number, phase, date, venue, home, away)
